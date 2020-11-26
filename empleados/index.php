@@ -1,180 +1,7 @@
 <?php
-//print_r($_POST);
-
-$txtid = (isset($_POST['txtid']))?$_POST['txtid']:"";
-$txtNombre = (isset($_POST['txtNombre']))?$_POST['txtNombre']:"";
-$txtApellido = (isset($_POST['txtApellido']))?$_POST['txtApellido']:"";
-$txtCorreo = (isset($_POST['txtCorreo']))?$_POST['txtCorreo']:"";
-$txtTelefono = (isset($_POST['txtTelefono']))?$_POST['txtTelefono']:"";
-$txtFoto = (isset($_FILES['txtFoto']["name"]))?$_FILES['txtFoto']["name"]:"";
-
-
-$accion = (isset($_POST['accion']))?$_POST['accion']:"";
-
-$error = array();
-
-/* activacion de botones */
-$accionAgregar = "";
-$accionModificar = $accionEliminar = $accionCancelar = "disabled";
-$mostrarModal = false;
-
-
-include("../conexion/conexion.php");
-
-switch ($accion) {
-    case 'btnAgregar':
-
-        /* validacion */
-        if ($txtNombre=="") {
-            $error['nombre'] = "Escribe el nombre";
-        }
-        if ($txtApellido=="") {
-            $error['apellido'] = "Escribe el apellido";
-        }
-        if ($txtCorreo=="") {
-            $error['correo'] = "Correo no valido";
-        }
-        if ($txtTelefono=="") {
-            $error['telefono'] = "Digita tu numero de contacto";
-        }
-        if (count($error) > 0) {
-            $mostrarModal = true;
-        break;
-        }
-
-        $insertar = $pdo->prepare("INSERT INTO empleados(nombre,apellido,correo,telefono,foto) /* Creamos un objeto  */
-        VALUES(:nombre,:apellido,:correo,:telefono,:foto)");
-
-        $insertar->bindParam(':nombre',$txtNombre);
-        $insertar->bindParam(':apellido',$txtApellido);
-        $insertar->bindParam(':correo',$txtCorreo);
-        $insertar->bindParam(':telefono',$txtTelefono);
-
-        $fecha = new DateTime();
-        $nombreArchivo = ($txtFoto!="")?$fecha->getTimestamp()."_".$_FILES["txtFoto"]["name"]:"cheems.png";
-
-        $tmpFoto = $_FILES["txtFoto"]["tmp_name"];
-
-        if ($tmpFoto!="") {
-            move_uploaded_file($tmpFoto,"../imagenes/".$nombreArchivo);
-        }
-        $insertar->bindParam(':foto',$nombreArchivo);
-        $insertar->execute();
-
-        header('Location: index.php');
-
-        break;
-
-    case 'btnModificar':
-        
-        $insertar = $pdo->prepare("UPDATE empleados SET 
-        nombre=:nombre,
-        apellido=:apellido,
-        correo=:correo,
-        telefono=:telefono WHERE id=:id"); /* Creamos un objeto  */
-
-        $insertar->bindParam(':nombre',$txtNombre);
-        $insertar->bindParam(':apellido',$txtApellido);
-        $insertar->bindParam(':correo',$txtCorreo);
-        $insertar->bindParam(':telefono',$txtTelefono);
-        $insertar->bindParam(':id',$txtid);
-        $insertar->execute();
-
-        $fecha = new DateTime();
-        $nombreArchivo = ($txtFoto!="")?$fecha->getTimestamp()."_".$_FILES["txtFoto"]["name"]:"cheems.png";
-
-        $tmpFoto = $_FILES["txtFoto"]["tmp_name"];
-
-        if ($tmpFoto!="") {
-            move_uploaded_file($tmpFoto,"../imagenes/".$nombreArchivo);
-
-            $insertar = $pdo->prepare("SELECT foto FROM empleados WHERE id=:id"); 
-
-            $insertar->bindParam(':id',$txtid);
-            $insertar->execute();
-            $empleado = $insertar->fetch(PDO::FETCH_LAZY);
-            print_r($empleado);
-
-        if (isset($empleado["foto"])) {
-            if (file_exists("../imagenes/".$empleado["foto"])) {
-
-                if ($item['foto']!="cheems.png") {
-                    unlink("../imagenes/".$empleado["foto"]);
-                }
-            }
-        }
-
-            $insertar = $pdo->prepare("UPDATE empleados SET foto=:foto WHERE id=:id");
-
-            $insertar->bindParam(':foto',$nombreArchivo);
-            $insertar->bindParam(':id',$txtid);
-            $insertar->execute();
-        }
-
-        
-
-        header('Location: index.php');
-        
-        break;
-    case 'btnEliminar':
-
-        $insertar = $pdo->prepare("SELECT foto FROM empleados WHERE id=:id"); 
-
-        $insertar->bindParam(':id',$txtid);
-        $insertar->execute();
-        $empleado = $insertar->fetch(PDO::FETCH_LAZY);
-        print_r($empleado);
-
-        if (isset($empleado['foto'])&&($item['foto']!="cheems.png")) {
-            if (file_exists('../imagenes/'.$empleado['foto'])) {
-                unlink("../imagenes/".$empleado["foto"]);
-            }
-        }
-        
-        $insertar = $pdo->prepare("DELETE FROM empleados WHERE id=:id"); 
-
-        $insertar->bindParam(':id',$txtid);
-        $insertar->execute();
-
-        header('Location: index.php');
-       
-        break;
-    case 'btnCancelar':
-        header('Location: index.php');
-        break;
-
-    case 'Seleccionar':
-        $accionAgregar = "disabled";
-        $accionModificar = $accionEliminar = $accionCancelar = "";
-        $mostrarModal=true;
-
-        $insertar = $pdo->prepare("SELECT * FROM empleados WHERE id=:id"); 
-        $insertar->bindParam(':id',$txtid);
-        $insertar->execute();
-        $empleado = $insertar->fetch(PDO::FETCH_LAZY);
-
-        $txtNombre = $empleado['nombre'];
-        $txtApellido = $empleado['apellido'];
-        $txtCorreo = $empleado['correo'];
-        $txtTelefono = $empleado['telefono'];
-        $txtFoto = $empleado['foto'];
-
-
-        break;
-    
-    default:
-        # code...
-        break;
-}
-    $insertar = $pdo->prepare("SELECT * FROM `empleados` WHERE 1");
-    $insertar->execute();
-    $listaEmpleados=$insertar->fetchAll(PDO::FETCH_ASSOC); /* devolver o asociar informacion */
-
-    //print_r($listaEmpleados);
+require 'empleados.php';
 
 ?>
-
-
 
 
 <!DOCTYPE html>
@@ -266,7 +93,7 @@ switch ($accion) {
             <div class="modal-footer">
                 <button value="btnAgregar" <?php echo $accionAgregar ?> class="btn btn-success" type="submit" name="accion">Agregar</button>
                 <button value="btnModificar" <?php echo $accionModificar ?> class="btn btn-warning" type="submit" name="accion">Modificar</button>
-                <button value="btnEliminar" <?php echo $accionEliminar ?> class="btn btn-danger" type="submit" name="accion">Eliminar</button>
+                <button value="btnEliminar" onclick="return Confirmar('¿Esta deguro que desea eliminar el registro?');" <?php echo $accionEliminar ?> class="btn btn-danger" type="submit" name="accion">Eliminar</button>
                 <button value="btnCancelar" <?php echo $accionCancelar ?> class="btn btn-primary" type="submit" name="accion">Cancelar</button>
 
             </div>
@@ -279,6 +106,8 @@ switch ($accion) {
         <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
             Agregar
             </button>
+            <br>
+            <br>
             
             
 
@@ -286,8 +115,8 @@ switch ($accion) {
         </form>
         <!-- creamos la tabla y llamamos los datos -->
         <div class="row">
-            <table class="table">
-                <thead> <!-- cabecera de la tabla -->
+            <table class="table table-hover table-bordered">
+                <thead class="thead-dark"> <!-- cabecera de la tabla -->
                     <tr>
                         <th>Foto</th>
                         <th>Nombre Completo</th>
@@ -311,7 +140,7 @@ switch ($accion) {
                         <input type="hidden" name="txtid" value="<?php echo $empleado['id']; ?>">
 
                         <input type="submit" value="Seleccionar" class="btn btn-info" name="accion">
-                        <button value="btnEliminar" type="submit" class="btn btn-danger" name="accion">Eliminar</button>
+                        <button value="btnEliminar" onclick="return Confirmar('¿Esta deguro que desea eliminar el registro?');" type="submit" class="btn btn-danger" name="accion">Eliminar</button>
 
              
                         
@@ -344,5 +173,11 @@ switch ($accion) {
             <script>$('#exampleModal').modal('show');</script>
                       
 <?php } ?> 
+
+<script>
+    function Confirmar(Mensaje) {
+        return (confirm(Mensaje))?true:false;
+    }
+</script>
 </body>
 </html>
